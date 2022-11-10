@@ -5,18 +5,16 @@ services:
     container_name: postgres_container
     image: postgres
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "root"
       PGDATA: "/var/lib/postgresql/data/pgdata"
     volumes:
-      - ./database/postgres:/var/lib/postgresql/data
-#      - ../2. Init Database:/docker-entrypoint-initdb.d
-#      - .:/var/lib/postgresql/data
+      - ./database/postgres:/var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready" ]
+      test: [ "CMD-SHELL", "pg_isready", "-U","postgres","-d", "postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -41,12 +39,14 @@ services:
       - mynetwork
 
   fastapi:
+    container_name: fastapi_container
     build: .
-    entrypoint: [ "bash", "-c", "alembic upgrade head && python go_now.py"]
-#    command: bash -c "alembic upgrade head && python go_now.py "
+    environment:
+      - PYTHONUNBUFFERED:1
+    command: bash -c "alembic revision -m 'Initial' --autogenerate 
+              && alembic upgrade head && cd ./services && python transform_data.py && cd .. && python main.py"
     ports:
       - "8000:8000"
-    restart: on-failure
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,10 +60,11 @@ services:
 
   cache:
     image: redis:6.2-alpine
+    container_name: cashe_container
     restart: always
     ports:
       - '6379:6379'
-    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    command: redis-server --save 20 1 --loglevel warning
     volumes:
       - cache:/data
     networks:
@@ -78,7 +79,8 @@ services:
       - cluster.name=es-docker-cluster
       - discovery.seed_hosts=es02,es03
       - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=false
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
@@ -99,7 +101,8 @@ services:
       - cluster.name=es-docker-cluster
       - discovery.seed_hosts=es01,es03
       - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=false
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
@@ -123,7 +126,8 @@ services:
       - cluster.name=es-docker-cluster
       - discovery.seed_hosts=es01,es02
       - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=false
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ulimits:
       memlock:
@@ -147,11 +151,11 @@ services:
 
 volumes:
   data01:
-      driver: local
+    driver: local
   data02:
-      driver: local
+    driver: local
   data03:
-      driver: local
+    driver: local
   cache:
     driver: local
 

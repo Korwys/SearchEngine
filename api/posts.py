@@ -24,7 +24,7 @@ async def get_results(query: str, session: AsyncSession = Depends(get_db)) -> li
         return response
 
 
-@router.delete('/delete/{post_id}', status_code=status.HTTP_200_OK)
+@router.delete('/delete/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_id(id: int, session: AsyncSession = Depends(get_db)) -> JSONResponse:
     """Удаляет данные по ID из ElasticSearch и БД"""
     await delete_id_in_elastic(id=id)

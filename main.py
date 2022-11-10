@@ -20,7 +20,6 @@ app = FastAPI(
     },
 )
 
-
 app.mount("/static/index.css", StaticFiles(directory="static"), name="static")
 test_client = TestClient(app)
 

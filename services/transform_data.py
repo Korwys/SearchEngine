@@ -3,7 +3,7 @@ import pandas as pd
 from elasticsearch.helpers import bulk
 from sqlalchemy.future import create_engine
 
-from services.settings import manager
+from settings import manager
 
 
 def transform_data_from_file_to_db() -> None:
@@ -36,3 +36,7 @@ def main():
         manager.elastic_server.indices.delete(index='posts')
     manager.elastic_server.indices.create(index='posts')
     bulk(manager.elastic_server, add_data_to_elastic())
+
+
+if __name__ == '__main__':
+    main()

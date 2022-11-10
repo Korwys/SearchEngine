@@ -13,8 +13,7 @@ async def get_search_results_by_text(data: str, session: AsyncSession):
     try:
         elastic_query = await manager.async_elastic_client.search(
             index="posts",
-            query={"match": {"text": data}},
-            size=10000
+            body={"size": 1500, "query": {"match": {"text": data}}}
         )
         list_id = [item['_source']['id'] for item in elastic_query['hits']['hits']]
         new_query = list(map(int, list_id))
@@ -28,7 +27,10 @@ async def get_search_results_by_text(data: str, session: AsyncSession):
 async def delete_id_in_elastic(id: int) -> None:
     """Удаляет документы из elastica по ID"""
     try:
-        fetch_element_by_id = await manager.async_elastic_client.search(index='posts', query={"match": {"id": id}})
+        fetch_element_by_id = await manager.async_elastic_client.search(
+            index='posts',
+            body={"size": 1, "query": {"match": {"id": id}}}
+        )
         elastic_id = fetch_element_by_id['hits']['hits'][0]['_id']
         await manager.async_elastic_client.delete(index='posts', id=elastic_id)
     except (Exp.NotFoundError, Exp.ConnectionError) as e:
