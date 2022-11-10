@@ -14,7 +14,7 @@ from models.posts import Base
 # access to the values within the .ini file in use.
 config = context.config
 config.set_main_option('sqlalchemy.url',
-                       f'postgresql+asyncpg://{username}:{password}@{ip}/{dbname}?async_fallback=True')
+                       f'postgresql+asyncpg://postgres:root@postgres:5432/postgres?async_fallback=True')
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

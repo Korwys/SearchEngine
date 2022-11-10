@@ -1,0 +1,160 @@
+version: '2.2'
+
+services:
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ./database/postgres:/var/lib/postgresql/data
+#      - ../2. Init Database:/docker-entrypoint-initdb.d
+#      - .:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - mynetwork
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - ./database/pgadmin:/root/.pgadmin
+
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+    networks:
+      - mynetwork
+
+  fastapi:
+    build: .
+    entrypoint: [ "bash", "-c", "alembic upgrade head && python go_now.py"]
+#    command: bash -c "alembic upgrade head && python go_now.py "
+    ports:
+      - "8000:8000"
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+      es02:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    networks:
+      - mynetwork
+
+
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes:
+      - cache:/data
+    networks:
+      - mynetwork
+
+
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.1
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - mynetwork
+
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.1
+    container_name: es02
+    environment:
+      - node.name=es02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    volumes:
+      - data02:/usr/share/elasticsearch/data
+    networks:
+      - mynetwork
+
+  es03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.1
+    container_name: es03
+    environment:
+      - node.name=es03
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data03:/usr/share/elasticsearch/data
+    networks:
+      - mynetwork
+
+  kib01:
+    image: docker.elastic.co/kibana/kibana:7.13.1
+    container_name: kib01
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://es01:9200
+      ELASTICSEARCH_HOSTS: '["http://es01:9200","http://es02:9200","http://es03:9200"]'
+    networks:
+      - mynetwork
+
+volumes:
+  data01:
+      driver: local
+  data02:
+      driver: local
+  data03:
+      driver: local
+  cache:
+    driver: local
+
+networks:
+  mynetwork:
+    driver: bridge

@@ -20,6 +20,7 @@ app = FastAPI(
     },
 )
 
+
 app.mount("/static/index.css", StaticFiles(directory="static"), name="static")
 test_client = TestClient(app)
 
@@ -27,4 +28,4 @@ app.include_router(posts.router, tags=['api'], prefix='/api')
 app.include_router(search_and_delete.router)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='127.0.0.1', port=8000, reload=True)
+    uvicorn.run(app, host='0.0.0.0')

@@ -12,7 +12,7 @@ password = os.getenv('DB_PASSWORD')
 ip = os.getenv('DB_ADRESS')
 dbname = os.getenv('DB_NAME')
 
-SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{username}:{password}@{ip}/{dbname}"
+SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://postgres:root@postgres:5432/postgres"
 
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
 

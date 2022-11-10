@@ -1,4 +1,3 @@
-from elasticsearch import AsyncElasticsearch
 from elasticsearch import exceptions as Exp
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,17 +5,14 @@ from sqlalchemy import exc
 from sqlalchemy.future import select
 
 from models.posts import Post
-
-
-elastic_client = AsyncElasticsearch(hosts='https://localhost:9200', basic_auth=('elastic', 'FEAG41B0-rn-aYQqin2g'),
-                                    ca_certs="http_ca.crt")
+from services.settings import manager
 
 
 async def get_search_results_by_text(data: str, session: AsyncSession):
     """Возвращает результы поискового запроса"""
     try:
-        elastic_query = await elastic_client.search(
-            index="posts6",
+        elastic_query = await manager.async_elastic_client.search(
+            index="posts",
             query={"match": {"text": data}},
             size=10000
         )
@@ -32,9 +28,9 @@ async def get_search_results_by_text(data: str, session: AsyncSession):
 async def delete_id_in_elastic(id: int) -> None:
     """Удаляет документы из elastica по ID"""
     try:
-        fetch_element_by_id = await elastic_client.search(index='posts', query={"match": {"id": id}})
+        fetch_element_by_id = await manager.async_elastic_client.search(index='posts', query={"match": {"id": id}})
         elastic_id = fetch_element_by_id['hits']['hits'][0]['_id']
-        await elastic_client.delete(index='nole3', id=elastic_id)
+        await manager.async_elastic_client.delete(index='posts', id=elastic_id)
     except (Exp.NotFoundError, Exp.ConnectionError) as e:
         print(e)
 

@@ -1,13 +1,9 @@
 import pandas as pd
 
-from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 from sqlalchemy.future import create_engine
 
-from models.db_config import dbname, ip, password, username
-
-elastic_client = Elasticsearch(hosts='https://localhost:9200', basic_auth=('elastic', 'FEAG41B0-rn-aYQqin2g'),
-                               ca_certs="../http_ca.crt")
+from services.settings import manager
 
 
 def transform_data_from_file_to_db() -> None:
@@ -19,7 +15,7 @@ def transform_data_from_file_to_db() -> None:
     df_new['rubrics'] = df_new['rubrics'].str.replace('[', '{')
     df_new['rubrics'] = df_new['rubrics'].str.replace(']', '}')
 
-    db = create_engine(f"postgresql://{username}:{password}@{ip}/{dbname}")
+    db = create_engine("postgresql://postgres:root@postgres:5432/postgres")
     df_new.to_sql('posts', db, if_exists='append', index=False, )
 
 
@@ -28,7 +24,7 @@ def add_data_to_elastic() -> dict:
     df = pd.read_csv('../posts.csv', usecols=[0])
     for index, value in enumerate(df.to_dict(orient="records")):
         yield {
-            "_index": "posts6",
+            "_index": "posts",
             "id": f"{index + 1}",
             "text": value['text']
         }
@@ -36,9 +32,7 @@ def add_data_to_elastic() -> dict:
 
 def main():
     transform_data_from_file_to_db()
-    elastic_client.indices.create(index='posts6')
-    bulk(elastic_client, add_data_to_elastic())
-
-
-if __name__ == '__main__':
-    main()
+    if manager.elastic_server.indices.exists(index='posts'):
+        manager.elastic_server.indices.delete(index='posts')
+    manager.elastic_server.indices.create(index='posts')
+    bulk(manager.elastic_server, add_data_to_elastic())
