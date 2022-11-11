@@ -1,18 +1,11 @@
-import os
-
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
 
-load_dotenv()
+from config.env_config import settings
 
-username = os.getenv('DB_USERNAME')
-password = os.getenv('DB_PASSWORD')
-ip = os.getenv('DB_ADRESS')
-dbname = os.getenv('DB_NAME')
-
-SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://postgres:root@postgres:5432/postgres"
+SQLALCHEMY_DATABASE_URL = \
+    f"postgresql+asyncpg://{settings.db_username}:{settings.db_password}@{settings.db_address}/{settings.db_name}"
 
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
 

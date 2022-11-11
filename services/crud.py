@@ -1,11 +1,11 @@
 from elasticsearch import exceptions as Exp
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import exc
 from sqlalchemy.future import select
+from sqlalchemy.exc import OperationalError, NoResultFound, DisconnectionError, DatabaseError
 
 from models.posts import Post
-from services.settings import manager
+from config.setup_manager import manager
 
 
 async def get_search_results_by_text(data: str, session: AsyncSession):
@@ -20,7 +20,7 @@ async def get_search_results_by_text(data: str, session: AsyncSession):
         result = await session.execute(
             select(Post).where(Post.id.in_(new_query)).order_by(Post.created_date.desc()).limit(20))
         return result.scalars().all()
-    except (Exp.NotFoundError, Exp.ConnectionError) as e:
+    except (Exp.NotFoundError, Exp.ConnectionError, OperationalError, NoResultFound, DisconnectionError) as e:
         print(e)
 
 
@@ -41,5 +41,5 @@ async def delete_id_in_db(id: int, session: AsyncSession) -> None:
     """Удаляет пост из БД по ID"""
     try:
         await session.execute(delete(Post).where(Post.id == id))
-    except (ValueError, TypeError, exc.NoResultFound, exc.DatabaseError) as e:
+    except (DisconnectionError, DatabaseError) as e:
         print(e)

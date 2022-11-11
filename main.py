@@ -6,6 +6,7 @@ from starlette.testclient import TestClient
 
 from views import search_and_delete
 from api import posts
+from config import env_config
 
 app = FastAPI(
     title="FastAPI SearchEngine",

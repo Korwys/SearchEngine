@@ -1,30 +1,15 @@
-from fastapi import Depends
-from api.posts import delete_id
-from main import test_client
-from models.db_config import get_db
-
-session = Depends(get_db)
-
-fake_db = {
-    1: {'id': 1, "text": 'привет', 'rubrics': ['asd', 'mmm', 'ppp'], 'created_date': 10 - 12 - 2021},
-    2: {'id': 2, "text": 'привет-пока', 'rubrics': ['ooo', 'fff', 'ppp'], 'created_date': 10 - 12 - 2021},
-    3: {'id': 3, "text": 'пока', 'rubrics': ['asd', 'fff', 'ppp'], 'created_date': 10 - 13 - 2021},
-    4: {'id': 4, "text": 'как дела?', 'rubrics': ['vvv', 'fff', 'ppp'], 'created_date': 10 - 13 - 2021},
-    5: {'id': 5, "text": 'ты кто?', 'rubrics': ['www', 'fff', 'ppp'], 'created_date': 10 - 14 - 2021}
-}
+import requests
 
 
-# def test_main():
-#     response = test_client.get('/')
-#     assert response.status_code == 200
+def test_apiget():
+    req = requests.get('http://localhost:8000/api/search/привет')
+    response = req.json()
+    assert response[0]['rubrics'] == ["'VK-1603736028819866'", "'VK-12226415716'", "'VK-38169460183'"]
+    assert req.status_code == 200
 
 
-def test_search():
-    response = test_client.get('/api/search/небо')
-    assert response.json()[0]['id'] == 398
-    assert response.status_code == 200
-
-
-def test_delete():
-    response = test_client.delete('/api/delete/{post_id}?id=100')
-    print(response.json())
+def test_api_delete():
+    req = requests.delete('http://localhost:8000/api/delete/{post_id}?id=41')
+    response = req.json()
+    assert response['message'] == 'Object deleted'
+    assert req.status_code == 200

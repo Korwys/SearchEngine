@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer,Text, DateTime, ARRAY
 
-from models.db_config import Base
+from config.db_config import Base
 
 
 class Post(Base):

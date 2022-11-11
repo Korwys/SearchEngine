@@ -4,11 +4,11 @@ from fastapi import Depends, APIRouter, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
-from models.db_config import get_db
+from config.db_config import get_db
 from schemas.posts import PostInDB
 from services.crud import get_search_results_by_text, delete_id_in_elastic, delete_id_in_db
 from services.redis_cache import redis_cache
-from services.settings import manager
+from config.setup_manager import manager
 
 router = APIRouter()
 
@@ -24,7 +24,7 @@ async def get_results(query: str, session: AsyncSession = Depends(get_db)) -> li
         return response
 
 
-@router.delete('/delete/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/delete/{post_id}', status_code=status.HTTP_200_OK)
 async def delete_id(id: int, session: AsyncSession = Depends(get_db)) -> JSONResponse:
     """Удаляет данные по ID из ElasticSearch и БД"""
     await delete_id_in_elastic(id=id)

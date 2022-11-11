@@ -3,7 +3,8 @@ import pandas as pd
 from elasticsearch.helpers import bulk
 from sqlalchemy.future import create_engine
 
-from settings import manager
+from config.env_config import settings
+from config.setup_manager import manager
 
 
 def transform_data_from_file_to_db() -> None:
@@ -15,7 +16,8 @@ def transform_data_from_file_to_db() -> None:
     df_new['rubrics'] = df_new['rubrics'].str.replace('[', '{')
     df_new['rubrics'] = df_new['rubrics'].str.replace(']', '}')
 
-    db = create_engine("postgresql://postgres:root@postgres:5432/postgres")
+    db = create_engine(
+        f"postgresql://{settings.db_username}:{settings.db_password}@{settings.db_address}/{settings.db_name}")
     df_new.to_sql('posts', db, if_exists='append', index=False, )
 
 
