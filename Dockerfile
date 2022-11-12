@@ -8,4 +8,6 @@ COPY ./posts.csv /posts.csv
 
 RUN pip install -r requirements.txt
 
+ENV PYTHONPATH "${PYTHONPATH}:/app"
+
 CMD ["python","main.py"]
