@@ -1,8 +1,11 @@
+import json
+
 import uvicorn
 
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 from starlette.testclient import TestClient
+import logging.config
 
 from views import search_and_delete
 from api import posts
@@ -20,6 +23,10 @@ app = FastAPI(
         "name": "MIT",
     },
 )
+
+
+config_file = open('./config/logging_config.json')
+logging.config.dictConfig(json.load(config_file))
 
 app.mount("/static/index.css", StaticFiles(directory="static"), name="static")
 test_client = TestClient(app)

@@ -1,3 +1,5 @@
+import logging
+
 import pandas as pd
 
 from elasticsearch.helpers import bulk
@@ -5,6 +7,8 @@ from sqlalchemy.future import create_engine
 
 from config.env_config import settings
 from config.setup_manager import manager
+
+logger = logging.getLogger('app.services.transform_data')
 
 
 def transform_data_from_file_to_db() -> None:
@@ -32,12 +36,15 @@ def add_data_to_elastic() -> dict:
         }
 
 
-def main():
-    transform_data_from_file_to_db()
-    if manager.elastic_server.indices.exists(index='posts'):
-        manager.elastic_server.indices.delete(index='posts')
-    manager.elastic_server.indices.create(index='posts')
-    bulk(manager.elastic_server, add_data_to_elastic())
+def main() -> None:
+    try:
+        transform_data_from_file_to_db()
+        if manager.elastic_server.indices.exists(index='posts'):
+            manager.elastic_server.indices.delete(index='posts')
+        manager.elastic_server.indices.create(index='posts')
+        bulk(manager.elastic_server, add_data_to_elastic())
+    except Exception as err:
+        logger.exception(err)
 
 
 if __name__ == '__main__':

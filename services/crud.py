@@ -1,3 +1,5 @@
+import logging
+
 from elasticsearch import exceptions as Exp
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +9,8 @@ from sqlalchemy.exc import OperationalError, NoResultFound, DisconnectionError, 
 from models.posts import Post
 from config.setup_manager import manager
 
+
+logger =logging.getLogger('app.services.crud')
 
 async def get_search_results_by_text(data: str, session: AsyncSession):
     """Возвращает результы поискового запроса"""
@@ -20,8 +24,8 @@ async def get_search_results_by_text(data: str, session: AsyncSession):
         result = await session.execute(
             select(Post).where(Post.id.in_(new_query)).order_by(Post.created_date.desc()).limit(20))
         return result.scalars().all()
-    except (Exp.NotFoundError, Exp.ConnectionError, OperationalError, NoResultFound, DisconnectionError) as e:
-        print(e)
+    except Exception as err:
+        logger.exception(err)
 
 
 async def delete_id_in_elastic(id: int) -> None:
@@ -33,13 +37,20 @@ async def delete_id_in_elastic(id: int) -> None:
         )
         elastic_id = fetch_element_by_id['hits']['hits'][0]['_id']
         await manager.async_elastic_client.delete(index='posts', id=elastic_id)
-    except (Exp.NotFoundError, Exp.ConnectionError) as e:
-        print(e)
+    except Exception as err:
+        logger.exception(err)
 
 
 async def delete_id_in_db(id: int, session: AsyncSession) -> None:
     """Удаляет пост из БД по ID"""
     try:
         await session.execute(delete(Post).where(Post.id == id))
-    except (DisconnectionError, DatabaseError) as e:
-        print(e)
+    except (DisconnectionError, DatabaseError) as err:
+        logger.error(err)
+
+
+async def delete_from_cache():
+    """Инвалидация кэша"""
+    logger.info('Chache Invalidation')
+    await manager.redis.flushdb(asynchronous=True)
+    logger.info('Chache cleared')
